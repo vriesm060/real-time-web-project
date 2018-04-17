@@ -1,0 +1,64 @@
+
+:root {
+  /* Fonts */
+  --font-family: 'montserrat', arial, sans-serif;
+
+    /* Base fonts */
+    --base-font-size: 1em;
+    --base-font-weight: 300;
+    --base-line-height: 1.7;
+
+    /* Heading fonts */
+    --heading-font-size: 2em;
+    --heading-font-weight: 500;
+    --heading-line-height: 1.4;
+
+    /* Title fonts */
+    --title-font-family: 'poiret one', arial, sans-serif;
+    --title-font-size: 5em;
+    --title-line-height: 1;
+
+  /* Colors */
+  --color-primary: #167F39;
+  --color-black: #00261C;
+
+    /* Temp colors */
+    --color-temp-hot: #FA6900;
+    --color-temp-warm: #F38630;
+    --color-temp-medium: #E0E4CC;
+    --color-temp-chilly: #A7DBD8;
+    --color-temp-cold: #69D2E7;
+
+  /* Spacing */
+  --spacing-unit: 1.5rem;
+}
+
+/*
+====================
+    General
+====================
+*/
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+}
+
+body {
+  color: var(--color-black);
+  font-family: var(--font-family);
+  font-size: var(--base-font-size);
+  font-weight: var(--base-font-weight);
+  line-height: var(--base-line-height);
+}
+
+h1 {
+  font-family: var(--title-font-family);
+  font-size: var(--title-font-size);
+  line-height: var(--title-line-height);
+}
