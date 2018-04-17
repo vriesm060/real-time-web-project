@@ -15,7 +15,7 @@
 
     /* Title fonts */
     --title-font-family: 'poiret one', arial, sans-serif;
-    --title-font-size: 5em;
+    --title-font-size: 7em;
     --title-line-height: 1;
 
   /* Colors */
@@ -51,6 +51,7 @@
 
 body {
   color: var(--color-black);
+  background-color: var(--color-temp-medium);
   font-family: var(--font-family);
   font-size: var(--base-font-size);
   font-weight: var(--base-font-weight);
@@ -61,4 +62,10 @@ h1 {
   font-family: var(--title-font-family);
   font-size: var(--title-font-size);
   line-height: var(--title-line-height);
+  letter-spacing: .25em;
+}
+
+/* Temporary: */
+.wrapper {
+  margin: var(--spacing-unit);
 }
