@@ -2,9 +2,13 @@ var express = require('express');
 var app = express();
 var http = require('http').Server(app);
 var yql = require('yql');
+var request = require('request');
+var bodyParser = require('body-parser');
 require('dotenv').config({ path: './vars.env' });
 
 app.use(express.static('public'));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.set('view engine', 'ejs');
 
 var apiClientId = process.env.API_CLIENT_ID;
@@ -16,31 +20,33 @@ var queries = {
 
 // Api test:
 
-var query = new yql(queries.getAllFromAmsterdam);
-
-var weatherData;
-
-query.exec(function(err, data) {
-  var results = data.query.results.channel;
-
-  weatherData = {
-    units: results.units,
-    lastBuildDate: results.lastBuildDate,
-    wind: results.wind,
-    atmosphere: results.atmosphere,
-    astronomy: results.astronomy,
-    pubDate: results.item.pubDate,
-    condition: results.item.condition,
-    forecast: results.item.forecast
-  };
-
-});
+var url = 'https://query.yahooapis.com/v1/public/yql?format=json&q=' + queries.getAllFromAmsterdam;
 
 // Get homepage:
 
+var weatherData;
+
 app.get('/', function (req, res) {
+
+  request(url, function (err, response, body) {
+    var data = JSON.parse(body);
+
+    var results = data.query.results.channel;
+
+    weatherData = {
+      units: results.units,
+      lastBuildDate: results.lastBuildDate,
+      wind: results.wind,
+      atmosphere: results.atmosphere,
+      astronomy: results.astronomy,
+      pubDate: results.item.pubDate,
+      condition: results.item.condition,
+      forecast: results.item.forecast
+    };
+
+  });
+
   console.log(`ID: ${apiClientId}, Secret: ${apiClientSecret}`);
-  console.log(`pubDate: ${weatherData.pubDate}, lastBuildDate: ${weatherData.lastBuildDate}`);
   res.render('index', {
     temp: weatherData.condition.temp,
     pubDate: weatherData.pubDate
