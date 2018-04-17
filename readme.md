@@ -1,17 +1,36 @@
-# Yahoo Weather API
+# Real-time Weather App
 
-<!-- Add a nice image here at the end of the week, showing off your shiny frontend 📸 -->
+<!-- ![Preview](screenshots/preview.png) -->
 
-<!-- Maybe a table of contents here? 📚 -->
+This is a real-time weather app, created using the [Yahoo Weather API](https://developer.yahoo.com/weather/).
 
-<!-- How about a section that describes how to install this project? 🤓 -->
+## Table of Contents
 
-<!-- ...but how does one use this project? What are its features 🤔 -->
+## Installation
 
-<!-- What external data source is featured in your project and what are its properties 🌠 -->
+## Getting started
 
-<!-- Where do the 0️⃣s and 1️⃣s live in your project? What db system are you using?-->
+## Frameworks
 
-<!-- Maybe a checklist of done stuff and stuff still on your wishlist? ✅ -->
+* [ ]
 
-<!-- How about a license here? 📜 (or is it a licence?) 🤷 -->
+## Features
+
+* [ ]
+
+## Usage
+
+#### Yahoo Weather API
+---
+
+#### Events
+---
+
+<!-- #### Database
+--- -->
+
+## To do
+
+* [ ]
+
+## Licence
