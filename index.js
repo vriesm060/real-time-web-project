@@ -28,29 +28,33 @@ var weatherData;
 
 app.get('/', function (req, res) {
 
-  request(url, function (err, response, body) {
-    var data = JSON.parse(body);
+    request(url, function (err, response, body) {
+      var data = JSON.parse(body);
 
-    var results = data.query.results.channel;
+      var results = data.query.results.channel;
 
-    weatherData = {
-      units: results.units,
-      lastBuildDate: results.lastBuildDate,
-      wind: results.wind,
-      atmosphere: results.atmosphere,
-      astronomy: results.astronomy,
-      pubDate: results.item.pubDate,
-      condition: results.item.condition,
-      forecast: results.item.forecast
-    };
+      weatherData = {
+        units: results.units,
+        lastBuildDate: results.lastBuildDate,
+        wind: results.wind,
+        atmosphere: results.atmosphere,
+        astronomy: results.astronomy,
+        pubDate: results.item.pubDate,
+        condition: results.item.condition,
+        forecast: results.item.forecast
+      };
 
-  });
+      console.log(weatherData.pubDate);
 
-  console.log(`ID: ${apiClientId}, Secret: ${apiClientSecret}`);
-  res.render('index', {
-    temp: weatherData.condition.temp,
-    pubDate: weatherData.pubDate
-  });
+    });
+
+    console.log(`ID: ${apiClientId}, Secret: ${apiClientSecret}`);
+    res.render('index', {
+      temp: weatherData.condition.temp,
+      pubDate: weatherData.pubDate
+    });
+
+
 });
 
 http.listen(process.env.LOCALHOST);
