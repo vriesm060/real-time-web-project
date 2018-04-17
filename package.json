@@ -1,0 +1,27 @@
+{
+  "name": "real-time-weather-app",
+  "version": "1.0.0",
+  "description": "<!-- Add a nice image here at the end of the week, showing off your shiny frontend 📸 -->",
+  "main": "index.js",
+  "scripts": {
+    "start": "nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vriesm060/real-time-web-project.git"
+  },
+  "author": "Max de Vries",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vriesm060/real-time-web-project/issues"
+  },
+  "homepage": "https://github.com/vriesm060/real-time-web-project#readme",
+  "dependencies": {
+    "ejs": "^2.5.8",
+    "express": "^4.16.3"
+  },
+  "devDependencies": {
+    "nodemon": "^1.17.3"
+  }
+}
