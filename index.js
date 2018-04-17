@@ -18,10 +18,12 @@ var queries = {
 
 var query = new yql(queries.getAllFromAmsterdam);
 
+var weatherData;
+
 query.exec(function(err, data) {
   var results = data.query.results.channel;
 
-  var weather = {
+  weatherData = {
     units: results.units,
     lastBuildDate: results.lastBuildDate,
     wind: results.wind,
@@ -32,15 +34,17 @@ query.exec(function(err, data) {
     forecast: results.item.forecast
   };
 
-  console.log(weather);
-
 });
 
 // Get homepage:
 
 app.get('/', function (req, res) {
   console.log(`ID: ${apiClientId}, Secret: ${apiClientSecret}`);
-  res.render('index');
+  console.log(`pubDate: ${weatherData.pubDate}, lastBuildDate: ${weatherData.lastBuildDate}`);
+  res.render('index', {
+    temp: weatherData.condition.temp,
+    pubDate: weatherData.pubDate
+  });
 });
 
 http.listen(process.env.LOCALHOST);
