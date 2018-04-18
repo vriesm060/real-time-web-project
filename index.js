@@ -23,6 +23,8 @@ var weatherData;
 query.exec(function(err, data) {
   var results = data.query.results.channel;
 
+  console.log(data.query.created);
+
   weatherData = {
     units: results.units,
     lastBuildDate: results.lastBuildDate,
@@ -39,8 +41,10 @@ query.exec(function(err, data) {
 // Get homepage:
 
 app.get('/', function (req, res) {
-  console.log(`ID: ${apiClientId}, Secret: ${apiClientSecret}`);
-  console.log(`pubDate: ${weatherData.pubDate}, lastBuildDate: ${weatherData.lastBuildDate}`);
+
+  console.log(weatherData.pubDate);
+  console.log(weatherData.lastBuildDate);
+
   res.render('index', {
     temp: weatherData.condition.temp,
     pubDate: weatherData.pubDate
