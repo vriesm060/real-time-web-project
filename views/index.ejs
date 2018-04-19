@@ -6,7 +6,7 @@
   <body>
 
     <div class="wrapper">
-      <h1 id="temp">&deg;</h1>
+      <h1 id="temp"></h1>
       <h2 id="pubDate"></h2>
     </div>
 
@@ -17,10 +17,10 @@
       var temp = document.getElementById('temp');
       var pubDate = document.getElementById('pubDate');
 
-      socket.on('update', function (data) {
+      socket.on('update', function (weatherData) {
 
-        temp.innerHTML = data.temp + '&deg;';
-        pubDate.textContent = data.pubDate;
+        temp.innerHTML = `${weatherData.condition.temp}&deg;`;
+        pubDate.textContent = weatherData.pubDate;
 
       });
 
