@@ -2,6 +2,7 @@ var express = require('express');
 var app = express();
 var http = require('http').Server(app);
 var yql = require('yql');
+var io = require('socket.io')(http);
 require('dotenv').config({ path: './vars.env' });
 
 app.use(express.static('public'));
@@ -14,41 +15,77 @@ var queries = {
   getAllFromAmsterdam: 'select * from weather.forecast where woeid = 727232 and u="c"'
 };
 
-// Api test:
+// Polling:
+// help: https://github.com/vpdeva/long-poll/blob/master/server.js
 
-var query = new yql(queries.getAllFromAmsterdam);
+var pollingTimer;
+var connectionsArr = [];
 
-var weatherData;
+var pollingloop = function () {
+  var query = new yql(queries.getAllFromAmsterdam);
 
-query.exec(function(err, data) {
-  var results = data.query.results.channel;
+  query.exec(function(err, data) {
 
-  console.log(data.query.created);
+    if (err) throw err;
 
-  weatherData = {
-    units: results.units,
-    lastBuildDate: results.lastBuildDate,
-    wind: results.wind,
-    atmosphere: results.atmosphere,
-    astronomy: results.astronomy,
-    pubDate: results.item.pubDate,
-    condition: results.item.condition,
-    forecast: results.item.forecast
-  };
+    var results = data.query.results.channel;
 
+    console.log(`Created: ${data.query.created}`);
+    console.log(`pubDate: ${results.item.pubDate}`);
+
+    var weatherData = {
+      units: results.units,
+      lastBuildDate: results.lastBuildDate,
+      wind: results.wind,
+      atmosphere: results.atmosphere,
+      astronomy: results.astronomy,
+      pubDate: results.item.pubDate,
+      condition: results.item.condition,
+      forecast: results.item.forecast
+    };
+
+    if (connectionsArr.length) {
+      pollingTimer = setTimeout(pollingloop, 60000);
+
+      updateSockets({
+        temp: weatherData.condition.temp,
+        pubDate: weatherData.pubDate
+      });
+    }
+
+  });
+}
+
+io.sockets.on('connection', function (socket) {
+  console.log('a user connected');
+  connectionsArr.push(socket);
+  console.log(`number of connections: ${connectionsArr.length}`);
+
+  if (connectionsArr.length) {
+    pollingloop();
+  }
+
+  socket.on('disconnect', function () {
+    var socketIndex = connectionsArr.indexOf(socket);
+    console.log(`user ${socketIndex} disconnected`);
+    if (socketIndex >= 0) {
+      connectionsArr.splice(socketIndex, 1);
+    }
+  });
 });
+
+var updateSockets = function (data) {
+  data.time = new Date();
+
+  connectionsArr.forEach(function (tmpSocket) {
+    io.emit('update', data);
+  });
+}
 
 // Get homepage:
 
 app.get('/', function (req, res) {
-
-  console.log(weatherData.pubDate);
-  console.log(weatherData.lastBuildDate);
-
-  res.render('index', {
-    temp: weatherData.condition.temp,
-    pubDate: weatherData.pubDate
-  });
+  res.render('index');
 });
 
 http.listen(process.env.LOCALHOST);
