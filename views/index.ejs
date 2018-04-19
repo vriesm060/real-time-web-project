@@ -6,9 +6,25 @@
   <body>
 
     <div class="wrapper">
-      <h1><%= temp %>&deg;</h1>
-      <h2><%= pubDate %></h2>
+      <h1 id="temp">&deg;</h1>
+      <h2 id="pubDate"></h2>
     </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="text/javascript">
+
+      var socket = io.connect('http://localhost:3000');
+      var temp = document.getElementById('temp');
+      var pubDate = document.getElementById('pubDate');
+
+      socket.on('update', function (data) {
+
+        temp.innerHTML = data.temp + '&deg;';
+        pubDate.textContent = data.pubDate;
+
+      });
+
+    </script>
 
   </body>
 </html>
