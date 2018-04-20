@@ -26,84 +26,94 @@ var query = function (city) {
   return `select * from weather.forecast where woeid in (select woeid from geo.places(1) where text='${city.toLowerCase()}') and u='c'`;
 }
 
+// Get the remaining time till next hour:
+var getNextHour = function () {
+  var date = new Date();
+  var minutes = date.getMinutes() * 60;
+  var seconds = date.getSeconds();
+  var timeTillNextHour = 3600 - (minutes + seconds);
+  return timeTillNextHour * 1000;
+}
+
 var pollingTimer;
-
 var cities = [];
-
 var connectedSockets = [];
 var database = [];
 
-var pollingLoop = function (city) {
-  // Make a new yahoo query:
-  var YQL = new yql(query(city));
+// Update all cities every hour:
+var pollingLoop = function () {
+  if (cities.length) {
+    cities.forEach(function (city) {
 
-  // Execute this query:
-  YQL.exec(function(err, data) {
-    if (err) throw err;
+      // Make a new yahoo query:
+      var YQL = new yql(query(city));
 
-    var results = data.query.results.channel;
+      // Execute this query:
+      YQL.exec(function(err, data) {
+        if (err) throw err;
 
-    console.log(`Created: ${data.query.created}`);
-    console.log(`pubDate: ${results.item.pubDate}`);
+        var results = data.query.results.channel;
 
-    // Get the wanted weather data as an object:
-    var weatherData = {
-      location: results.location,
-      units: results.units,
-      lastBuildDate: results.lastBuildDate,
-      wind: results.wind,
-      atmosphere: results.atmosphere,
-      astronomy: results.astronomy,
-      pubDate: results.item.pubDate,
-      condition: results.item.condition,
-      forecast: results.item.forecast
-    };
+        // Get the wanted weather data as an object:
+        var weatherData = {
+          location: results.location,
+          units: results.units,
+          lastBuildDate: results.lastBuildDate,
+          wind: results.wind,
+          atmosphere: results.atmosphere,
+          astronomy: results.astronomy,
+          pubDate: results.item.pubDate,
+          condition: results.item.condition,
+          forecast: results.item.forecast
+        };
 
-    // When there are clients connected:
-    if (database.length) {
-      // Update the pollingTimer:
-      pollingTimer = setTimeout(function () {
-        pollingLoop(city);
-      }, 36000000);
+        // When there are clients connected:
+        if (database.length) {
+          database.forEach(function (client) {
+            if (city === client.city) {
+              updateSockets(client.id, weatherData);
+            }
+          });
+        }
 
-      // Update the sockets:
-      updateSockets(weatherData);
-    }
+        // Add interpolling:
 
-  });
+      });
+    });
+
+    pollingTimer = setTimeout(pollingLoop, getNextHour());
+  }
 }
 
 io.use(sharedsession(session, {
-    autoSave:true
+  autoSave: true
 }));
 
 io.on('connection', function (socket) {
   console.log(`User ${socket.handshake.session.client.name} connected`);
+  console.log(`Users in database: ${database.length}`);
 
   connectedSockets.push(socket);
-
-  var socketIndex = database.indexOf(socket.handshake.session.client);
+  var socketIndex = connectedSockets.indexOf(socket);
+  database[socketIndex].id = socket.id;
 
   cities.push(socket.handshake.session.client.city);
 
-  cities.forEach(function (city) {
-    pollingLoop(city);
-  });
+  pollingLoop();
 
   socket.on('disconnect', function () {
     if (socket.handshake.session.client) {
       console.log(`User ${socket.handshake.session.client.name} disconnected`);
       delete socket.handshake.session.client;
       database.splice(socketIndex, 1);
+      connectedSockets.splice(socketIndex, 1);
     }
-    console.log(`Clients in database: ${database.length}`);
+    console.log(`Users in database: ${database.length}`);
   });
 });
 
-var updateSockets = function (weatherData) {
-  connectedSockets.forEach(function (socket) {
-    socket.emit('update', weatherData);
-  });
+var updateSockets = function (id, weatherData) {
+  io.to(id).emit('update', weatherData);
 }
 
 // Get homepage:
@@ -115,7 +125,6 @@ app.get('/', function (req, res) {
 app.get('/weather', function (req, res) {
 
   req.session.client = {
-    id: req.session.id,
     name: req.query.name,
     city: req.query.city
   };
