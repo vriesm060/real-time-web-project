@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <% include head.ejs %>
+
+  <body>
+
+    <div class="wrapper">
+      <h1 id="temp"></h1>
+      <h3 id="city"></h3>
+      <h3 id="pubDate"></h3>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="text/javascript">
+
+      var socket = io.connect('http://localhost:3000/');
+      var temp = document.getElementById('temp');
+      var city = document.getElementById('city');
+      var pubDate = document.getElementById('pubDate');
+
+      socket.on('update', function (weatherData) {
+
+        temp.innerHTML = `${weatherData.condition.temp}&deg;`;
+        city.textContent = weatherData.location.city;
+        pubDate.textContent = weatherData.pubDate;
+
+      });
+
+    </script>
+
+  </body>
+</html>
