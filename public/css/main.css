@@ -65,6 +65,12 @@ h1 {
   letter-spacing: .25em;
 }
 
+h2 {
+  font-size: var(--heading-font-size);
+  font-weight: var(--heading-font-weight);
+  line-height: var(--heading-line-height);
+}
+
 /* Temporary: */
 .wrapper {
   margin: var(--spacing-unit);
