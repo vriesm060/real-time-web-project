@@ -11,6 +11,10 @@
       <h3 id="pubDate"></h3>
     </div>
 
+    <div class="notification">
+      <h3 id="user"></h3>
+    </div>
+
     <script src="/socket.io/socket.io.js"></script>
     <script type="text/javascript">
 
@@ -18,13 +22,35 @@
       var temp = document.getElementById('temp');
       var city = document.getElementById('city');
       var pubDate = document.getElementById('pubDate');
+      var user = document.getElementById('user');
 
       socket.on('update', function (weatherData) {
 
         temp.innerHTML = `${weatherData.condition.temp}&deg;`;
         city.textContent = weatherData.location.city;
-        pubDate.textContent = weatherData.pubDate;
+        pubDate.textContent = weatherData.condition.date;
 
+        var curTemp = weatherData.condition.temp;
+        var condition;
+
+        if (curTemp < 5) {
+          condition = 'cold';
+        } else if (curTemp >= 5 && curTemp < 10) {
+          condition = 'chilly';
+        } else if (curTemp >= 10 && curTemp < 15) {
+          condition = 'medium';
+        } else if (curTemp >= 15 && curTemp < 30) {
+          condition = 'warm';
+        } else if (curTemp >= 30) {
+          condition = 'hot';
+        }
+
+        document.body.style.backgroundColor = `var(--color-temp-${condition})`;
+
+      });
+
+      socket.on('new-client', function (client) {
+        user.textContent = client.name;
       });
 
     </script>

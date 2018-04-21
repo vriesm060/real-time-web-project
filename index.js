@@ -3,6 +3,7 @@ var app = express();
 var http = require('http').Server(app);
 var yql = require('yql');
 var io = require('socket.io')(http);
+var bodyParser = require('body-parser');
 var session = require('express-session')({
   secret: 'keyboard cat',
   resave: true,
@@ -13,6 +14,8 @@ require('dotenv').config({ path: './vars.env' });
 
 app.use(express.static('public'));
 app.use(session);
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 app.set('view engine', 'ejs');
 
 // API updates each hour with a 35 min delay for some reason (e.g. 10.00 am update updates at 10.35)
@@ -71,16 +74,20 @@ var pollingLoop = function () {
         if (database.length) {
           database.forEach(function (client) {
             if (city === client.city) {
-              updateSockets(client.id, weatherData);
+              client.weatherData = weatherData;
+              updateSockets(client);
             }
           });
         }
 
         // Add interpolling:
 
+        // console.log(`curTemp: ${weatherData.condition.temp}`);
+        // console.log(results);
+
       });
     });
-
+    console.log('update');
     pollingTimer = setTimeout(pollingLoop, getNextHour());
   }
 }
@@ -97,6 +104,8 @@ io.on('connection', function (socket) {
   var socketIndex = connectedSockets.indexOf(socket);
   database[socketIndex].id = socket.id;
 
+  console.log(`Connected Sockets: ${connectedSockets.length}`);
+
   cities.push(socket.handshake.session.client.city);
 
   pollingLoop();
@@ -107,13 +116,18 @@ io.on('connection', function (socket) {
       delete socket.handshake.session.client;
       database.splice(socketIndex, 1);
       connectedSockets.splice(socketIndex, 1);
+      console.log(`Users in database: ${database.length}`);
+      console.log(`Connected Sockets: ${connectedSockets.length}`);
     }
-    console.log(`Users in database: ${database.length}`);
   });
 });
 
-var updateSockets = function (id, weatherData) {
-  io.to(id).emit('update', weatherData);
+var updateSockets = function (client) {
+  io.to(client.id).emit('update', client.weatherData);
+}
+
+var showActiveClients = function () {
+  console.log();
 }
 
 // Get homepage:
@@ -123,10 +137,14 @@ app.get('/', function (req, res) {
 });
 
 app.get('/weather', function (req, res) {
+  res.render('weather');
+});
+
+app.post('/weather', function (req, res) {
 
   req.session.client = {
-    name: req.query.name,
-    city: req.query.city
+    name: req.body.name,
+    city: req.body.city
   };
 
   database.push(req.session.client);
