@@ -137,8 +137,28 @@ io.use(sharedsession(session, {
 // });
 
 io.on('connection', function (socket) {
-  console.log('a user connected');
-  // console.log(socket.handshake.session.user);
+  socket.handshake.session.user.socketId = socket.id;
+  socket.handshake.session.user.sessionId = socket.handshake.session.id;
+
+  console.log(`user ${socket.handshake.session.user.name} connected,`);
+  console.log(`with socketId: ${socket.handshake.session.user.socketId}`);
+
+  // Add new user to database:
+  database.push(socket.handshake.session.user);
+
+  // Update user's weatherData every hour:
+
+  // Show history of connected users with name, city and current temp:
+  if (database.length > 1) {
+    database.forEach(function (user) {
+      if (user.socketId !== socket.id) {
+        socket.emit('history', user);
+      }
+    });
+  }
+
+  // Show new connected users with name, city and current temp:
+  socket.broadcast.emit('new-user', socket.handshake.session.user);
 
   socket.on('disconnect', function () {
     console.log('a user disconnected');
@@ -172,6 +192,8 @@ app.get('/weather', function (req, res) {
       city: req.query.city,
       weather: weather
     };
+
+    req.session.user = user;
 
     res.render('weather', {
       user: user
