@@ -11,9 +11,7 @@
       <h3 id="pubDate"><%= user.weather.condition.date %></h3>
     </div>
 
-    <div class="notification">
-      <h3 id="user"></h3>
-    </div>
+    <ul class="notifications"></ul>
 
     <script src="/socket.io/socket.io.js"></script>
     <script type="text/javascript">
@@ -22,7 +20,51 @@
       var temp = document.getElementById('temp');
       var city = document.getElementById('city');
       var pubDate = document.getElementById('pubDate');
-      var user = document.getElementById('user');
+      var notifications = document.querySelector('.notifications');
+
+      socket.on('history', function (user) {
+        var li = document.createElement('li');
+        var h3 = document.createElement('h3');
+
+        h3.innerHTML = `${user.name} is in ${user.city}: ${user.weather.condition.temp}&deg;`;
+
+        li.appendChild(h3);
+        notifications.appendChild(li);
+
+        setTimeout(function () {
+          li.classList.add('show');
+        }, 500);
+
+        setTimeout(function () {
+          li.classList.remove('show');
+        }, 10800);
+
+        setTimeout(function () {
+          notifications.removeChild(li);
+        }, 11100);
+      });
+
+      socket.on('new-user', function (user) {
+        var li = document.createElement('li');
+        var h3 = document.createElement('h3');
+
+        h3.innerHTML = `${user.name} connected in ${user.city}: ${user.weather.condition.temp}&deg;`;
+
+        li.appendChild(h3);
+        notifications.appendChild(li);
+
+        setTimeout(function () {
+          li.classList.add('show');
+        }, 500);
+
+        setTimeout(function () {
+          li.classList.remove('show');
+        }, 10800);
+
+        setTimeout(function () {
+          notifications.removeChild(li);
+        }, 11100);
+      });
 
       socket.on('update', function (weatherData) {
 
@@ -47,10 +89,6 @@
 
         document.body.style.backgroundColor = `var(--color-temp-${condition})`;
 
-      });
-
-      socket.on('new-client', function (client) {
-        user.textContent = client.name;
       });
 
     </script>

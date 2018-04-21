@@ -77,11 +77,22 @@ h2 {
   margin: var(--spacing-unit);
 }
 
-.notification {
+.notifications {
   position: fixed;
   right: 0;
   top: 0;
   display: block;
+}
+
+.notifications li {
+  display: block;
+  padding: calc(.5 * var(--spacing-unit));
   margin: var(--spacing-unit);
-  background-color: yellow;
+  color: #FFF;
+  background-color: var(--color-black);
+  transform: translateX(calc(100% + (2 * var(--spacing-unit))));
+  transition: transform .3s ease-in-out;
+}
+.notifications li.show {
+  transform: translateX(0);
 }
