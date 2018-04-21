@@ -25,10 +25,6 @@ app.set('view engine', 'ejs');
 var apiClientId = process.env.API_CLIENT_ID;
 var apiClientSecret = process.env.API_CLIENT_SECRET;
 
-var query = function (city) {
-  return `select * from weather.forecast where woeid in (select woeid from geo.places(1) where text='${city.toLowerCase()}') and u='c'`;
-}
-
 // Get the remaining time till next hour:
 var getNextHour = function () {
   var date = new Date();
@@ -43,82 +39,109 @@ var cities = [];
 var connectedSockets = [];
 var database = [];
 
-// Update all cities every hour:
-var pollingLoop = function () {
-  if (cities.length) {
-    cities.forEach(function (city) {
-
-      // Make a new yahoo query:
-      var YQL = new yql(query(city));
-
-      // Execute this query:
-      YQL.exec(function(err, data) {
-        if (err) throw err;
-
-        var results = data.query.results.channel;
-
-        // Get the wanted weather data as an object:
-        var weatherData = {
-          location: results.location,
-          units: results.units,
-          lastBuildDate: results.lastBuildDate,
-          wind: results.wind,
-          atmosphere: results.atmosphere,
-          astronomy: results.astronomy,
-          pubDate: results.item.pubDate,
-          condition: results.item.condition,
-          forecast: results.item.forecast
-        };
-
-        // When there are clients connected:
-        if (database.length) {
-          database.forEach(function (client) {
-            if (city === client.city) {
-              client.weatherData = weatherData;
-              updateSockets(client);
-            }
-          });
-        }
-
-        // Add interpolling:
-
-        // console.log(`curTemp: ${weatherData.condition.temp}`);
-        // console.log(results);
-
-      });
-    });
-    console.log('update');
-    pollingTimer = setTimeout(pollingLoop, getNextHour());
+var api = {
+  query: function (city) { return `select * from weather.forecast where woeid in (select woeid from geo.places(1) where text='${city.toLowerCase()}') and u='c'`; },
+  YQL: function (city) { return new yql(this.query(city)); },
+  getWeatherData: function (data) {
+    var results = data.query.results.channel;
+    var weatherData = {
+      location: results.location,
+      units: results.units,
+      wind: results.wind,
+      atmosphere: results.atmosphere,
+      astronomy: results.astronomy,
+      condition: results.item.condition,
+      forecast: results.item.forecast
+    };
+    return weatherData;
   }
-}
+};
+
+// Update all cities every hour:
+// var pollingLoop = function () {
+//   if (cities.length) {
+//     cities.forEach(function (city) {
+//
+//       // Make a new yahoo query:
+//       var YQL = new yql(query(city));
+//
+//       // Execute this query:
+//       YQL.exec(function(err, data) {
+//         if (err) throw err;
+//
+//         var results = data.query.results.channel;
+//
+//         // Get the wanted weather data as an object:
+//         var weatherData = {
+//           location: results.location,
+//           units: results.units,
+//           lastBuildDate: results.lastBuildDate,
+//           wind: results.wind,
+//           atmosphere: results.atmosphere,
+//           astronomy: results.astronomy,
+//           pubDate: results.item.pubDate,
+//           condition: results.item.condition,
+//           forecast: results.item.forecast
+//         };
+//
+//         // When there are clients connected:
+//         if (database.length) {
+//           database.forEach(function (client) {
+//             if (city === client.city) {
+//               client.weatherData = weatherData;
+//               updateSockets(client);
+//             }
+//           });
+//         }
+//
+//         // Add interpolling:
+//
+//         // console.log(`curTemp: ${weatherData.condition.temp}`);
+//         // console.log(results);
+//
+//       });
+//     });
+//     console.log('update');
+//     pollingTimer = setTimeout(pollingLoop, getNextHour());
+//   }
+// }
 
 io.use(sharedsession(session, {
   autoSave: true
 }));
 
+// io.on('connection', function (socket) {
+//   console.log(`User ${socket.handshake.session.client.name} connected`);
+//   console.log(`Users in database: ${database.length}`);
+//
+//   connectedSockets.push(socket);
+//   var socketIndex = connectedSockets.indexOf(socket);
+//   database[socketIndex].id = socket.id;
+//
+//   console.log(`Connected Sockets: ${connectedSockets.length}`);
+//
+//   cities.push(socket.handshake.session.client.city);
+//
+//   pollingLoop();
+//
+//   socket.on('disconnect', function () {
+//     if (socket.handshake.session.client) {
+//       console.log(`User ${socket.handshake.session.client.name} disconnected`);
+//       delete socket.handshake.session.client;
+//       database.splice(socketIndex, 1);
+//       connectedSockets.splice(socketIndex, 1);
+//       console.log(`Users in database: ${database.length}`);
+//       console.log(`Connected Sockets: ${connectedSockets.length}`);
+//     }
+//   });
+// });
+
 io.on('connection', function (socket) {
-  console.log(`User ${socket.handshake.session.client.name} connected`);
-  console.log(`Users in database: ${database.length}`);
-
-  connectedSockets.push(socket);
-  var socketIndex = connectedSockets.indexOf(socket);
-  database[socketIndex].id = socket.id;
-
-  console.log(`Connected Sockets: ${connectedSockets.length}`);
-
-  cities.push(socket.handshake.session.client.city);
-
-  pollingLoop();
+  console.log('a user connected');
+  // console.log(socket.handshake.session.user);
 
   socket.on('disconnect', function () {
-    if (socket.handshake.session.client) {
-      console.log(`User ${socket.handshake.session.client.name} disconnected`);
-      delete socket.handshake.session.client;
-      database.splice(socketIndex, 1);
-      connectedSockets.splice(socketIndex, 1);
-      console.log(`Users in database: ${database.length}`);
-      console.log(`Connected Sockets: ${connectedSockets.length}`);
-    }
+    console.log('a user disconnected');
   });
 });
 
@@ -137,19 +160,24 @@ app.get('/', function (req, res) {
 });
 
 app.get('/weather', function (req, res) {
-  res.render('weather');
-});
 
-app.post('/weather', function (req, res) {
+  // Get weatherData from API:
+  api.YQL(req.query.city).exec(function (err, data) {
+    if (err) throw err;
 
-  req.session.client = {
-    name: req.body.name,
-    city: req.body.city
-  };
+    var weather = api.getWeatherData(data);
 
-  database.push(req.session.client);
+    var user = {
+      name: req.query.name,
+      city: req.query.city,
+      weather: weather
+    };
 
-  res.render('weather');
+    res.render('weather', {
+      user: user
+    });
+  });
+
 });
 
 http.listen(process.env.LOCALHOST);
