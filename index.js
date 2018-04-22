@@ -132,20 +132,22 @@ app.get('/', function (req, res) {
   res.render('index');
 });
 
-app.get('/weather', function (req, res) {
+app.post('/weather', function (req, res) {
 
-  // Get weatherData from API:
-  api.YQL(req.query.city).exec(function (err, data) {
+  // Get weatherData for selected city from API:
+  api.YQL(req.body.city).exec(function (err, data) {
     if (err) throw err;
 
     var weather = api.getWeatherData(data);
 
+    // Create user obj:
     var user = {
-      name: req.query.name,
-      city: req.query.city,
+      name: req.body.name,
+      city: req.body.city,
       weather: weather
     };
 
+    // Add user to the session:
     req.session.user = user;
 
     res.render('weather', {
