@@ -22,11 +22,11 @@
       var pubDate = document.getElementById('pubDate');
       var notifications = document.querySelector('.notifications');
 
-      socket.on('history', function (user) {
+      var createNotification = function (text) {
         var li = document.createElement('li');
         var h3 = document.createElement('h3');
 
-        h3.innerHTML = `${user.name} is in ${user.city}: ${user.weather.condition.temp}&deg;`;
+        h3.innerHTML = text;
 
         li.appendChild(h3);
         notifications.appendChild(li);
@@ -42,37 +42,25 @@
         setTimeout(function () {
           notifications.removeChild(li);
         }, 11100);
+      }
+
+      socket.on('user-login', function (user) {
+        var text = `${user.name} connected in ${user.city}: ${user.weather.condition.temp}&deg;`;
+        createNotification(text);
       });
 
-      socket.on('new-user', function (user) {
-        var li = document.createElement('li');
-        var h3 = document.createElement('h3');
-
-        h3.innerHTML = `${user.name} connected in ${user.city}: ${user.weather.condition.temp}&deg;`;
-
-        li.appendChild(h3);
-        notifications.appendChild(li);
-
-        setTimeout(function () {
-          li.classList.add('show');
-        }, 500);
-
-        setTimeout(function () {
-          li.classList.remove('show');
-        }, 10800);
-
-        setTimeout(function () {
-          notifications.removeChild(li);
-        }, 11100);
+      socket.on('user-logout', function (user) {
+        var text = `${user.name} disconnected`;
+        createNotification(text);
       });
 
-      socket.on('update', function (weatherData) {
+      socket.on('update', function (weather) {
 
-        temp.innerHTML = `${weatherData.condition.temp}&deg;`;
-        city.textContent = weatherData.location.city;
-        pubDate.textContent = weatherData.condition.date;
+        temp.innerHTML = `${weather.condition.temp}&deg;`;
+        city.textContent = weather.location.city;
+        pubDate.textContent = weather.condition.date;
 
-        var curTemp = weatherData.condition.temp;
+        var curTemp = weather.condition.temp;
         var condition;
 
         if (curTemp < 5) {
