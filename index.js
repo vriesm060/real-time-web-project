@@ -35,8 +35,6 @@ var getNextHour = function () {
 }
 
 var pollingTimer;
-var cities = [];
-var connectedSockets = [];
 var database = [];
 
 var api = {
@@ -54,123 +52,78 @@ var api = {
       forecast: results.item.forecast
     };
     return weatherData;
+  },
+  pollingLoop: function (socketId, city) {
+    api.YQL(city).exec(function (err, data) {
+      if (err) throw err;
+
+      var weather = api.getWeatherData(data);
+
+      database.forEach(function (user) {
+        if (user.socketId === socketId) {
+          user.weather = weather;
+          console.log(user.weather.condition.date);
+          updateSocket(user.socketId, user.weather);
+        }
+      });
+
+      pollingTimer = setTimeout(function () {
+        api.pollingLoop(socketId, city);
+      }, getNextHour());
+    });
   }
 };
-
-// Update all cities every hour:
-// var pollingLoop = function () {
-//   if (cities.length) {
-//     cities.forEach(function (city) {
-//
-//       // Make a new yahoo query:
-//       var YQL = new yql(query(city));
-//
-//       // Execute this query:
-//       YQL.exec(function(err, data) {
-//         if (err) throw err;
-//
-//         var results = data.query.results.channel;
-//
-//         // Get the wanted weather data as an object:
-//         var weatherData = {
-//           location: results.location,
-//           units: results.units,
-//           lastBuildDate: results.lastBuildDate,
-//           wind: results.wind,
-//           atmosphere: results.atmosphere,
-//           astronomy: results.astronomy,
-//           pubDate: results.item.pubDate,
-//           condition: results.item.condition,
-//           forecast: results.item.forecast
-//         };
-//
-//         // When there are clients connected:
-//         if (database.length) {
-//           database.forEach(function (client) {
-//             if (city === client.city) {
-//               client.weatherData = weatherData;
-//               updateSockets(client);
-//             }
-//           });
-//         }
-//
-//         // Add interpolling:
-//
-//         // console.log(`curTemp: ${weatherData.condition.temp}`);
-//         // console.log(results);
-//
-//       });
-//     });
-//     console.log('update');
-//     pollingTimer = setTimeout(pollingLoop, getNextHour());
-//   }
-// }
 
 io.use(sharedsession(session, {
   autoSave: true
 }));
 
-// io.on('connection', function (socket) {
-//   console.log(`User ${socket.handshake.session.client.name} connected`);
-//   console.log(`Users in database: ${database.length}`);
-//
-//   connectedSockets.push(socket);
-//   var socketIndex = connectedSockets.indexOf(socket);
-//   database[socketIndex].id = socket.id;
-//
-//   console.log(`Connected Sockets: ${connectedSockets.length}`);
-//
-//   cities.push(socket.handshake.session.client.city);
-//
-//   pollingLoop();
-//
-//   socket.on('disconnect', function () {
-//     if (socket.handshake.session.client) {
-//       console.log(`User ${socket.handshake.session.client.name} disconnected`);
-//       delete socket.handshake.session.client;
-//       database.splice(socketIndex, 1);
-//       connectedSockets.splice(socketIndex, 1);
-//       console.log(`Users in database: ${database.length}`);
-//       console.log(`Connected Sockets: ${connectedSockets.length}`);
-//     }
-//   });
-// });
-
 io.on('connection', function (socket) {
   socket.handshake.session.user.socketId = socket.id;
   socket.handshake.session.user.sessionId = socket.handshake.session.id;
 
-  console.log(`user ${socket.handshake.session.user.name} connected,`);
-  console.log(`with socketId: ${socket.handshake.session.user.socketId}`);
-
   // Add new user to database:
   database.push(socket.handshake.session.user);
 
+  // Testing...
+  console.log(`user ${socket.handshake.session.user.name} connected,`);
+  console.log(`with socketId: ${socket.handshake.session.user.socketId}`);
+  console.log(`Connected users: ${database.length}`);
+
   // Update user's weatherData every hour:
+  api.pollingLoop(socket.id, socket.handshake.session.user.city);
 
   // Show history of connected users with name, city and current temp:
   if (database.length > 1) {
     database.forEach(function (user) {
       if (user.socketId !== socket.id) {
-        socket.emit('history', user);
+        socket.emit('user-login', user);
       }
     });
   }
 
   // Show new connected users with name, city and current temp:
-  socket.broadcast.emit('new-user', socket.handshake.session.user);
+  socket.broadcast.emit('user-login', socket.handshake.session.user);
 
   socket.on('disconnect', function () {
-    console.log('a user disconnected');
+    if (socket.handshake.session.user) {
+
+      // Show disconnected users:
+      socket.broadcast.emit('user-logout', socket.handshake.session.user);
+
+      // Remove user from database:
+      var socketIndex = database.indexOf(socket.handshake.session.user);
+      database.splice(socketIndex, 1);
+
+      console.log(`user ${socket.handshake.session.user.name} disconnected`);
+      delete socket.handshake.session.user;
+      console.log(`Connected users: ${database.length}`);
+    }
   });
 });
 
-var updateSockets = function (client) {
-  io.to(client.id).emit('update', client.weatherData);
-}
-
-var showActiveClients = function () {
-  console.log();
+var updateSocket = function (socketId, weather) {
+  io.to(socketId).emit('update', weather);
 }
 
 // Get homepage:
