@@ -45,6 +45,11 @@
       }
 
       socket.on('users-history', function (user) {
+        var text = `${user.name} is in ${user.city}: ${user.weather.condition.temp}&deg;`;
+        createNotification(text);
+      });
+
+      socket.on('user-login', function (user) {
         var text = `${user.name} connected in ${user.city}: ${user.weather.condition.temp}&deg;`;
         createNotification(text);
       });
