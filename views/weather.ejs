@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <% include head.ejs %>
+
+  <body>
+
+    <div class="wrapper">
+      <h1 id="temp"><%= user.weather.condition.temp %>&deg;</h1>
+      <h3 id="city"><%= user.city %></h3>
+      <h3 id="pubDate"><%= user.weather.condition.date %></h3>
+    </div>
+
+    <ul class="notifications"></ul>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="text/javascript">
+
+      var socket = io.connect('http://localhost:3000/');
+      var temp = document.getElementById('temp');
+      var city = document.getElementById('city');
+      var pubDate = document.getElementById('pubDate');
+      var notifications = document.querySelector('.notifications');
+
+      var createNotification = function (text) {
+        var li = document.createElement('li');
+        var h3 = document.createElement('h3');
+
+        h3.innerHTML = text;
+
+        li.appendChild(h3);
+        notifications.appendChild(li);
+
+        setTimeout(function () {
+          li.classList.add('show');
+        }, 500);
+
+        setTimeout(function () {
+          li.classList.remove('show');
+        }, 10800);
+
+        setTimeout(function () {
+          notifications.removeChild(li);
+        }, 11100);
+      }
+
+      socket.on('user-login', function (user) {
+        var text = `${user.name} connected in ${user.city}: ${user.weather.condition.temp}&deg;`;
+        createNotification(text);
+      });
+
+      socket.on('user-logout', function (user) {
+        var text = `${user.name} disconnected`;
+        createNotification(text);
+      });
+
+      socket.on('update', function (weather) {
+
+        temp.innerHTML = `${weather.condition.temp}&deg;`;
+        city.textContent = weather.location.city;
+        pubDate.textContent = weather.condition.date;
+
+        var curTemp = weather.condition.temp;
+        var condition;
+
+        if (curTemp < 5) {
+          condition = 'cold';
+        } else if (curTemp >= 5 && curTemp < 10) {
+          condition = 'chilly';
+        } else if (curTemp >= 10 && curTemp < 15) {
+          condition = 'medium';
+        } else if (curTemp >= 15 && curTemp < 30) {
+          condition = 'warm';
+        } else if (curTemp >= 30) {
+          condition = 'hot';
+        }
+
+        document.body.style.backgroundColor = `var(--color-temp-${condition})`;
+
+      });
+
+    </script>
+
+  </body>
+</html>
