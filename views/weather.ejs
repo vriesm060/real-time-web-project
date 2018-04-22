@@ -7,7 +7,7 @@
 
     <div class="wrapper">
       <h1 id="temp"><%= user.weather.condition.temp %>&deg;</h1>
-      <h3 id="city"><%= user.city %></h3>
+      <h3 id="city"><%= user.weather.location.city %></h3>
       <h3 id="pubDate"><%= user.weather.condition.date %></h3>
     </div>
 
@@ -45,12 +45,12 @@
       }
 
       socket.on('users-history', function (user) {
-        var text = `${user.name} is in ${user.city}: ${user.weather.condition.temp}&deg;`;
+        var text = `${user.name} is in ${user.weather.location.city}: ${user.weather.condition.temp}&deg;`;
         createNotification(text);
       });
 
       socket.on('user-login', function (user) {
-        var text = `${user.name} connected in ${user.city}: ${user.weather.condition.temp}&deg;`;
+        var text = `${user.name} connected in ${user.weather.location.city}: ${user.weather.condition.temp}&deg;`;
         createNotification(text);
       });
 

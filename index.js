@@ -30,6 +30,12 @@ var apiClientSecret = process.env.API_CLIENT_SECRET;
 var pollingTimer;
 var database = [];
 
+var toCapitalize = function (str) {
+  var firstLetter = str.charAt(0);
+  var rest = str.slice(1);
+  return firstLetter.toUpperCase() + rest.toLowerCase();
+}
+
 var api = {
   query: function (city) { return `select * from weather.forecast where woeid in (select woeid from geo.places(1) where text='${city.toLowerCase()}') and u='c'`; },
   YQL: function (city) { return new yql(this.query(city)); },
@@ -144,7 +150,7 @@ app.post('/weather', function (req, res) {
 
     // Create user obj:
     var user = {
-      name: req.body.name,
+      name: toCapitalize(req.body.name),
       city: req.body.city,
       weather: weather
     };
