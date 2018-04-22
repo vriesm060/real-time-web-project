@@ -17,22 +17,15 @@ app.use(session);
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.set('view engine', 'ejs');
+io.use(sharedsession(session, {
+  autoSave: true
+}));
 
 // API updates each hour with a 35 min delay for some reason (e.g. 10.00 am update updates at 10.35)
-
 // Polling help: https://github.com/vpdeva/long-poll/blob/master/server.js
 
 var apiClientId = process.env.API_CLIENT_ID;
 var apiClientSecret = process.env.API_CLIENT_SECRET;
-
-// Get the remaining time till next hour:
-var getNextHour = function () {
-  var date = new Date();
-  var minutes = date.getMinutes() * 60;
-  var seconds = date.getSeconds();
-  var timeTillNextHour = 3600 - (minutes + seconds);
-  return timeTillNextHour * 1000;
-}
 
 var pollingTimer;
 var database = [];
@@ -53,6 +46,13 @@ var api = {
     };
     return weatherData;
   },
+  getNextHour: function () {
+    var date = new Date();
+    var minutes = date.getMinutes() * 60;
+    var seconds = date.getSeconds();
+    var timeTillNextHour = 3600 - (minutes + seconds);
+    return timeTillNextHour * 1000;
+  },
   pollingLoop: function (socketId, city) {
     api.YQL(city).exec(function (err, data) {
       if (err) throw err;
@@ -61,72 +61,74 @@ var api = {
 
       database.forEach(function (user) {
         if (user.socketId === socketId) {
+          // Update the weather property:
           user.weather = weather;
+
           console.log(user.weather.condition.date);
-          updateSocket(user.socketId, user.weather);
+
+          // Give the update to the socket:
+          api.updateWeather(user.socketId, user.weather);
         }
       });
 
+      // Set a timeout for new update in one hour:
       pollingTimer = setTimeout(function () {
         api.pollingLoop(socketId, city);
-      }, getNextHour());
+      }, api.getNextHour());
     });
+  },
+  updateWeather: function (socketId, weather) {
+    io.to(socketId).emit('update', weather);
   }
 };
 
-io.use(sharedsession(session, {
-  autoSave: true
-}));
-
 io.on('connection', function (socket) {
-  socket.handshake.session.user.socketId = socket.id;
-  socket.handshake.session.user.sessionId = socket.handshake.session.id;
+  var user = socket.handshake.session.user;
+
+  // Add socket ID to user obj:
+  user.socketId = socket.id;
 
   // Add new user to database:
-  database.push(socket.handshake.session.user);
+  database.push(user);
 
   // Testing...
-  console.log(`user ${socket.handshake.session.user.name} connected,`);
-  console.log(`with socketId: ${socket.handshake.session.user.socketId}`);
+  console.log(`user ${user.name} connected,`);
+  console.log(`with socketId: ${user.socketId}`);
   console.log(`Connected users: ${database.length}`);
 
   // Update user's weatherData every hour:
-  api.pollingLoop(socket.id, socket.handshake.session.user.city);
+  api.pollingLoop(user.socketId, user.city);
 
   // Show history of connected users with name, city and current temp:
   if (database.length > 1) {
     database.forEach(function (user) {
       if (user.socketId !== socket.id) {
-        socket.emit('user-login', user);
+        socket.emit('users-history', user);
       }
     });
   }
 
-  // Show new connected users with name, city and current temp:
-  socket.broadcast.emit('user-login', socket.handshake.session.user);
+  // Show that the user logged in:
+  socket.broadcast.emit('user-login', user);
 
   socket.on('disconnect', function () {
-    if (socket.handshake.session.user) {
-
-      // Show disconnected users:
-      socket.broadcast.emit('user-logout', socket.handshake.session.user);
+    if (user) {
+      // Show that the user logged out:
+      socket.broadcast.emit('user-logout', user);
 
       // Remove user from database:
-      var socketIndex = database.indexOf(socket.handshake.session.user);
+      var socketIndex = database.indexOf(user);
       database.splice(socketIndex, 1);
 
-      console.log(`user ${socket.handshake.session.user.name} disconnected`);
-      delete socket.handshake.session.user;
+      console.log(`user ${user.name} disconnected`);
+
+      // Delete user from session:
+      delete user;
+
       console.log(`Connected users: ${database.length}`);
     }
   });
 });
-
-var updateSocket = function (socketId, weather) {
-  io.to(socketId).emit('update', weather);
-}
-
-// Get homepage:
 
 app.get('/', function (req, res) {
   res.render('index');
