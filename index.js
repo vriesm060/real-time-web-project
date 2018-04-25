@@ -4,6 +4,7 @@ var http = require('http').Server(app);
 var yql = require('yql');
 var io = require('socket.io')(http);
 var bodyParser = require('body-parser');
+var request = require('request');
 var session = require('express-session')({
   secret: 'keyboard cat',
   resave: true,
@@ -26,6 +27,7 @@ io.use(sharedsession(session, {
 
 var apiClientId = process.env.API_CLIENT_ID;
 var apiClientSecret = process.env.API_CLIENT_SECRET;
+var googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY;
 
 var pollingTimer;
 var database = [];
@@ -136,8 +138,27 @@ io.on('connection', function (socket) {
   });
 });
 
+var loc;
+
 app.get('/', function (req, res) {
-  res.render('index');
+  if (loc !== null || loc !== undefined) {
+    res.render('index', {
+      city: loc
+    });
+  } else {
+    res.render('index', {
+      city: ''
+    });
+  }
+});
+
+app.get('/location', function (req, res) {
+  var url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${req.query.latlng}&result_type=locality&key=${googleMapsApiKey}`;
+  request(url, function (err, response, body) {
+    var data = JSON.parse(body);
+    loc = data.results[0].address_components[0].long_name;
+    res.redirect('/');
+  });
 });
 
 app.post('/weather', function (req, res) {
