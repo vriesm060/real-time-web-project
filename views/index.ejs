@@ -7,13 +7,51 @@
 
     <h2>Real Time Weather</h2>
 
-    <form action="/weather" method="post">
+    <form class="login" action="/weather" method="post">
       <label for="name">Name</label>
       <input id="name" type="text" name="name" placeholder="Your name" value="" autocomplete="off">
       <label for="city">Enter your city</label>
       <input id="city" type="text" name="city" placeholder="e.g. Amsterdam" value="" autocomplete="off">
       <button type="submit">Enter</button>
     </form>
+
+    <script type="text/javascript">
+
+      // Test geolocation:
+
+      // function getLocation() {
+      //   if (navigator.geolocation) {
+      //     navigator.geolocation.getCurrentPosition(showPosition, showError);
+      //   } else {
+      //     console.log('Geolocation is not supported by this browser.');
+      //   }
+      // }
+      //
+      // function showPosition(position) {
+      //   console.log(`Lat: ${position.coords.latitude}`);
+      //   console.log(`Long: ${position.coords.longitude}`);
+      // }
+      //
+      // function showError(error) {
+      //   switch(error.code) {
+      //     case error.PERMISSION_DENIED:
+      //       console.log('User denied the request for Geolocation.');
+      //       break;
+      //     case error.POSITION_UNAVAILABLE:
+      //       console.log('Location information is unavailable.');
+      //       break;
+      //     case error.TIMEOUT:
+      //       console.log('The request to get user location timed out.');
+      //       break;
+      //     case error.UNKNOWN_ERROR:
+      //       console.log('An unknown error occurred.');
+      //       break;
+      //   }
+      // }
+      //
+      // getLocation();
+
+    </script>
 
   </body>
 </html>
