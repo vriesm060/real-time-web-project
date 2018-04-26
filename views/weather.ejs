@@ -5,10 +5,16 @@
 
   <body>
 
-    <div class="wrapper">
-      <h1 id="temp"><%= user.weather.condition.temp %>&deg;</h1>
-      <h3 id="city"><%= user.weather.location.city %></h3>
-      <h3 id="pubDate"><%= user.weather.condition.date %></h3>
+    <div class="currentWeather">
+      <div id="condition-svg"></div>
+      <h3 id="condition-text"><!-- condition goes here --></h3>
+      <h1 id="temp"><!-- temperature goes here --></h1>
+      <h2 id="city"><!-- city goes here --></h2>
+    </div>
+
+    <div class="forecast">
+      <h2>Forecast</h2>
+      <ul></ul>
     </div>
 
     <ul class="notifications"></ul>
@@ -17,10 +23,71 @@
     <script type="text/javascript">
 
       var socket = io.connect('http://localhost:3000/');
+      var svg = document.getElementById('condition-svg');
+      var conditionText = document.getElementById('condition-text');
       var temp = document.getElementById('temp');
       var city = document.getElementById('city');
-      var pubDate = document.getElementById('pubDate');
+      var forecast = document.querySelector('.forecast > ul');
       var notifications = document.querySelector('.notifications');
+
+      socket.on('update', function (user) {
+
+        var curTemp = user.weather.condition.temp;
+
+        svg.innerHTML = user.weather.svg;
+        conditionText.textContent = user.weather.condition.text;
+        temp.innerHTML = `${curTemp}&deg;${user.weather.units.temperature}`;
+        city.textContent = user.weather.location.city;
+
+        var condition;
+
+        if (curTemp < 5) {
+          condition = 'cold';
+        } else if (curTemp >= 5 && curTemp < 10) {
+          condition = 'chilly';
+        } else if (curTemp >= 10 && curTemp < 15) {
+          condition = 'medium';
+        } else if (curTemp >= 15 && curTemp < 30) {
+          condition = 'warm';
+        } else if (curTemp >= 30) {
+          condition = 'hot';
+        }
+
+        var bg = 'linear-gradient(-45deg,' +
+          'var(--color-temp-' + condition + '),' +
+          'var(--color-temp-' + condition + '-2),' +
+          'var(--color-temp-' + condition + '-3))';
+
+        document.body.style.background = bg;
+        document.body.style.backgroundSize = '300% 300%';
+
+        user.weather.forecast.forEach(function (date) {
+
+          var li = document.createElement('li');
+          var svg = document.createElement('svg');
+          var h3s = [];
+
+          for (var i = 0; i < 3; i++) {
+            var h3 = document.createElement('h3');
+            h3s.push(h3);
+          }
+
+          svg.innerHTML = date.svg;
+
+          h3s[0].textContent = date.date;
+          h3s[1].innerHTML = `${date.high}&deg;${user.weather.units.temperature}`;
+          h3s[2].innerHTML = `${date.low}&deg;${user.weather.units.temperature}`;
+
+          li.appendChild(svg);
+          li.appendChild(h3s[0]);
+          li.appendChild(h3s[1]);
+          li.appendChild(h3s[2]);
+
+          forecast.appendChild(li);
+
+        });
+
+      });
 
       var createNotification = function (text) {
         var li = document.createElement('li');
@@ -50,38 +117,13 @@
       });
 
       socket.on('user-login', function (user) {
-        var text = `${user.name} connected in ${user.weather.location.city}: ${user.weather.condition.temp}&deg;`;
+        var text = `${user.name} connected in ${user.city}`;
         createNotification(text);
       });
 
       socket.on('user-logout', function (user) {
         var text = `${user.name} disconnected`;
         createNotification(text);
-      });
-
-      socket.on('update', function (weather) {
-
-        temp.innerHTML = `${weather.condition.temp}&deg;`;
-        city.textContent = weather.location.city;
-        pubDate.textContent = weather.condition.date;
-
-        var curTemp = weather.condition.temp;
-        var condition;
-
-        if (curTemp < 5) {
-          condition = 'cold';
-        } else if (curTemp >= 5 && curTemp < 10) {
-          condition = 'chilly';
-        } else if (curTemp >= 10 && curTemp < 15) {
-          condition = 'medium';
-        } else if (curTemp >= 15 && curTemp < 30) {
-          condition = 'warm';
-        } else if (curTemp >= 30) {
-          condition = 'hot';
-        }
-
-        document.body.style.backgroundColor = `var(--color-temp-${condition})`;
-
       });
 
     </script>
